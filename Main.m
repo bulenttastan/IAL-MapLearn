@@ -1,7 +1,8 @@
 clear; close all; clc;
 tic;
-m = Map(80);
-m.display();
+% m = Map(100);
+m = ImageMap('maps/map1.png');
+m.display(); 
 % save m;
 % load m;
 % UserData.generate_trace(m);
