@@ -10,14 +10,14 @@ classdef ImageMap
             % NOTE: the map won't have diagonal states
             img = imread(imgfilename);
             imshow(img);
-            obj.Size = length(img);
+            obj.Size = length(img) + 1;
 %             num_elements = (obj.Size+1)^2;
             % Use only up to 3 letter variables in the struct
-            obj.S = repmat(struct('con',[], 'obs', false), obj.Size+1, obj.Size+1);
+            obj.S = repmat(struct('con',[], 'obs', false), obj.Size, obj.Size);
             
             % find the blocked cells in the image and set its corner nodes as obstacles
-            for i=1:obj.Size
-                for j=1:obj.Size
+            for i=1:obj.Size-1
+                for j=1:obj.Size-1
                     % if the image has color 0 then it's blocked
                     if img(i,j) == 0
                         obj.S(i,j).obs = true;
@@ -30,8 +30,8 @@ classdef ImageMap
             
             
             % Construct connectivity
-            for i=1:obj.Size
-                for j=1:obj.Size
+            for i=1:obj.Size-1
+                for j=1:obj.Size-1
                     % skip obstacle nodes
                     if obj.S(i,j).obs; continue; end
                     % checking Up
@@ -58,7 +58,7 @@ classdef ImageMap
         
         function index = get_index(obj,x,y)
             % Returns the state index with a given x, y location on the map
-            index = x*(obj.Size+1)+y+1;
+            index = x*(obj.Size)+y+1;
         end
         
         
@@ -66,26 +66,26 @@ classdef ImageMap
             hold on; axis equal; width = 800; height = 800;
             set(gcf, 'Position', [1914-width 998-height width height]);
             set(gca,'Position',[.02 .02 .96 .96]);
-            xlim([.5 obj.Size+.5]);
-            ylim([.5 obj.Size+.5]);
-            ylabel('i');
+            xlim([.5 obj.Size-.5]);
+            ylim([.5 obj.Size-.5]);
+            % ylabel('i');
             % view(-90, -90);
             
-            for i=.5:obj.Size+.5
-               plot([.5 obj.Size+.5], [i i]);
-               plot([i i], [.5 obj.Size+.5]);
+            for i=.5:obj.Size-.5
+               plot([.5 obj.Size-.5], [i i]);
+               plot([i i], [.5 obj.Size-.5]);
             end
             
-            for i=1:obj.Size+1
-                for j=1:obj.Size+1
+            for i=1:obj.Size
+                for j=1:obj.Size
                     if obj.S(i,j).obs
                         plot(j-.5,i-.5, 'r.');
                     end
                 end
             end
 %             % display using state connection
-%             for i=1:obj.Size+1
-%                 for j=1:obj.Size+1
+%             for i=1:obj.Size
+%                 for j=1:obj.Size
 %                     for row=1:size(obj.S(i,j).con,1)
 %                         plot(j-.5,i-.5,'.');
 %                         next_i = obj.S(i,j).con(row,1);
