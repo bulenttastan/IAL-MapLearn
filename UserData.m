@@ -2,12 +2,14 @@ classdef UserData
     %USERDATA Creates and stores user data on the Map
  
     properties
-        G           % Adjacency graph of the map
-        Map         % Occupancy Map that's used for the shortest path
+        Map;         % Occupancy Map that's used for the shortest path
+        ImageMap;    % Map object used for getting features
     end
     
     methods
         function obj = UserData(map)
+            obj.ImageMap = map;
+            
             % Construct the occupancy map
             obj.Map = zeros(map.Size);
             for i=1:map.Size
@@ -43,7 +45,7 @@ classdef UserData
 
                 % get the shortest path and extend the existing path
                 new_path = obj.shortest_path(prev_pnt, cur_pnt);
-                obj.display_path(new_path);
+                obj.display(new_path);
 
                 path = [path; new_path(2:end,:)];
                 prev_pnt = cur_pnt;
@@ -137,7 +139,79 @@ classdef UserData
         end
         
         
-        function display_path(obj, path)
+        function F = features(obj, path, map)
+            % Feature collection starts from the second step, 
+            % (the initial position is not used)
+            % Generate path specific features and then call the Map class
+            % feature function to get map specific features
+            F = [];
+            
+            % get direction for each step
+            direction = [3]; %initial direction is south
+            ijdiff = diff(path);
+            for i=1:size(ijdiff,1)
+                if ijdiff(i,1)==-1 && ijdiff(i,2)==0
+                    direction = [direction 1];
+                elseif ijdiff(i,1)==0 && ijdiff(i,2)==1
+                    direction = [direction 2];
+                elseif ijdiff(i,1)==1 && ijdiff(i,2)==0
+                    direction = [direction 3];
+                elseif ijdiff(i,1)==0 && ijdiff(i,2)==-1
+                    direction = [direction 4];
+                end
+            end
+
+            
+            turn_history = zeros(1,40);
+            for step=2:size(path,1)
+                internal_features = direction(step);
+
+                turn_history(end) = [];
+                if direction(step) ~= direction(step-1)
+                    turn_history = [1 turn_history];
+                else
+                    turn_history = [0 turn_history];
+                end
+
+                % length of the last straight move
+                check_upto = min(step,length(turn_history));
+                straight_move = find(turn_history(1:check_upto),1,'first') - 1;
+                if isempty(straight_move); straight_move = check_upto; end
+                internal_features = [internal_features straight_move];
+
+                % did turn in the last n-step
+                for i=[1 2:2:40]
+                    total_turns = sum(turn_history(1:i));
+                    turned = total_turns > 0;
+                    internal_features = [internal_features turned];
+                end
+
+                % number of turns in the last n-step
+                for i=[1 2:2:40]
+                    total_turns = sum(turn_history(1:i));
+                    internal_features = [internal_features total_turns];
+                end
+
+
+                % Get the external features from the Map
+                external_features = map.features(path(step,1),path(step,2),direction(step));
+
+                F = [F; internal_features external_features];
+                
+                str = '';
+                for i=1:length(internal_features)
+                    str = [str num2str(internal_features(i))];
+                end
+                for i=1:length(external_features)
+                    str = [str num2str(external_features(i))];
+                end
+
+                disp(str);
+            end
+        end
+        
+        
+        function display(obj, path)
             for i=1:size(path,1)-1
                 xarr = [path(i,2)-.5 path(i+1,2)-.5];
                 yarr = [path(i,1)-.5 path(i+1,1)-.5];

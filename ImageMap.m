@@ -212,7 +212,6 @@ classdef ImageMap
                 
                 % when all the wanted features are collected, exit the loop
                 if found_obstacle && found_water && found_sand
-                    disp('found everything');
                     break;
                 end
                 
@@ -282,6 +281,62 @@ classdef ImageMap
                 end
                 offset = offset + 3*list_size;
             end
+            
+            % distance to the closest obstacle in the current direction
+            ci = i;
+            cj = j;
+            dst = 0;
+            while ci>0 && ci<=obj.Size && cj>0 && cj<=obj.Size
+                F(1+offset) = dst; %this allows walls to be counted
+                if obj.S(ci,cj).obs; break; end
+                if direction == 1
+                    ci = ci-1;
+                elseif direction == 2
+                    cj = cj+1;
+                elseif direction == 3
+                    ci = ci+1;
+                elseif direction == 4
+                    cj = cj-1;
+                end
+                dst = dst + 1;
+            end
+            offset = offset+1;
+            
+            % closest distance to the wall
+            F(1+offset) = min(min(ci, obj.Size-ci), min(cj, obj.Size-cj));
+            offset = offset+1;
+            
+            % can see the wall in either direction
+            F(1+offset) = 1;
+            F(2+offset) = 1;
+            F(3+offset) = 1;
+            F(4+offset) = 1;
+            for ci=i:-1:1
+                if obj.S(ci,j).obs
+                    F(1+offset) = 0;
+                    break;
+                end
+            end
+            for cj=j:obj.Size
+                if obj.S(i,cj).obs
+                    F(2+offset) = 0;
+                    break;
+                end
+            end
+            for ci=i:obj.Size
+                if obj.S(ci,j).obs
+                    F(3+offset) = 0;
+                    break;
+                end
+            end
+            for cj=j:-1:1
+                if obj.S(i,cj).obs
+                    F(4+offset) = 0;
+                    break;
+                end
+            end
+            offset = offset+4;
+                    
         end
         
         
